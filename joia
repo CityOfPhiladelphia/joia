@@ -1,0 +1,186 @@
+#!/bin/bash
+#
+# joia deploys an app to an instance on AWS
+
+joia_dir=".joia"
+conf="$joia_dir/config"
+ssh_dir="$joia_dir/ssh"
+ssh_conf="$ssh_dir/config"
+ssh_hosts="$ssh_dir/known_hosts"
+
+if [ ! -f "$conf" ]; then
+  echo "No file found at $conf"
+  exit 1
+fi
+
+. "$conf"
+
+# Defaults
+[ ! "$JOIA_APP_DIR" ] && JOIA_APP_DIR=app
+[ ! "$JOIA_USER" ] && JOIA_USER=ubuntu
+[ ! "$JOIA_NAME" ] && JOIA_NAME=joia
+[ ! "$JOIA_AMI" ] && JOIA_AMI=ami-d05e75b8 # ubuntu 14.04
+[ ! "$JOIA_TYPE" ] && JOIA_TYPE=t2.micro
+
+#
+# Helper functions
+
+instance_check () {
+  [ ! "$JOIA_INSTANCE" ] && echo "No reference found for JOIA_INSTANCE" && exit 1
+}
+
+update_conf () {
+  echo "Setting $1 in $conf to $2"
+
+  # Replace value if var in file
+  ed_out=`ed -s $conf <<EOF
+g/$1/s/=.*/=$2
+w
+EOF`
+
+  # If the var wasn't already in the file add it
+  [ ! "$ed_out" ] && echo $1=$2 >> $conf
+}
+
+#
+# Command functions
+
+joia_deploy () {
+  echo "Running deploy script on instance"
+  joia_ssh "$JOIA_DEPLOY"
+
+  echo "Deployed to https://$JOIA_HOSTNAME"
+}
+
+joia_down () {
+  read -p "Terminate instance $JOIA_INSTANCE? (Enter \"y\" to proceed.) " terminate_yes
+  [ ! "$terminate_yes" = "y" ] && exit 0
+
+  aws ec2 terminate-instances --instance-id=$JOIA_INSTANCE
+
+  update_conf "JOIA_INSTANCE" ""
+}
+
+joia_host () {
+  echo "Getting hostname"
+  JOIA_HOSTNAME=`aws ec2 describe-instances --instance-id=$JOIA_INSTANCE | grep "^INSTANCES" | cut -f14`
+  update_conf "JOIA_HOSTNAME" $JOIA_HOSTNAME
+
+  echo "Setting up ssh access"
+  mkdir -p "$ssh_dir"
+  ssh-keyscan $JOIA_HOSTNAME >> "$ssh_hosts" 2> /dev/null
+  cat >> "$ssh_conf" <<EOF
+Host $JOIA_INSTANCE
+    User $JOIA_USER
+    HostName $JOIA_HOSTNAME
+    IdentityFile ~/.ssh/$KEY_PAIR.pem
+    UserKnownHostsFile $ssh_hosts
+EOF
+}
+
+joia_install () {
+  echo "Running install scripts on instance"
+  [ "$JOIA_PRE_INSTALL" ] && joia_ssh "$JOIA_PRE_INSTALL"
+  joia_ssh "$JOIA_INSTALL"
+}
+
+joia_ssh () {
+  ssh -F "$ssh_conf" $JOIA_INSTANCE "$1"
+}
+
+joia_sync () {
+  echo "Syncing files"
+  rsync -e "ssh -F $ssh_conf" -rzp --delete --exclude=".git" ./ $JOIA_INSTANCE:$JOIA_APP_DIR
+}
+
+joia_up () {
+  if [ "$JOIA_INSTANCE" ]; then
+    echo "Existing reference found: JOIA_INSTANCE=$JOIA_INSTANCE"
+    read -p "Spin up new instance and replace reference? (Enter \"y\" to proceed.) " ref_replace
+    [ ! "$ref_replace" = "y" ] && exit 0
+  fi
+
+  echo "Provisioning instance"
+  JOIA_INSTANCE=`aws ec2 run-instances --key-name $KEY_PAIR --instance-type $JOIA_TYPE \
+    --associate-public-ip-address --image-id $AMI --subnet-id $SUBNET | \
+    grep "^INSTANCES" | cut -f8`
+
+  echo "Tagging instance"
+  aws ec2 create-tags --resources $JOIA_INSTANCE --tags Key=Name,Value=$JOIA_NAME
+
+  update_conf "JOIA_INSTANCE" $JOIA_INSTANCE
+
+  echo -n "Waiting for instance $JOIA_INSTANCE to come online. This may take a few minutes"
+  while true; do
+    sleep 5
+    echo -n "."
+    reachability=`aws ec2 describe-instance-status --instance-id=$JOIA_INSTANCE | grep reachability | head -n1 | cut -f3`
+    [ "$reachability" = "passed" ] && break
+  done
+  echo
+
+  joia_host
+  joia_sync
+  joia_install
+  joia_deploy
+
+  echo "Sync and deploy on changes with \"joia watch\""
+}
+
+joia_watch () {
+  echo "Syncing and deploying on file changes"
+  fswatch -rdo --event Created --event Updated --event Removed . | while read num; do
+    joia_sync
+    joia_deploy
+  done
+}
+
+case "$1" in
+  deploy)
+    instance_check
+    joia_deploy
+    ;;
+  down)
+    instance_check
+    joia_down
+    ;;
+  host)
+    instance_check
+    joia_host
+    ;;
+  install)
+    instance_check
+    joia_install
+    ;;
+  ssh)
+    instance_check
+    joia_ssh
+    ;;
+  sync)
+    instance_check
+    joia_sync
+    ;;
+  up)
+    # no instance check
+    joia_up
+    ;;
+  watch)
+    instance_check
+    joia_watch
+    ;;
+  *)
+    cat <<EOF
+usage: joia <command>
+
+commands:
+  deploy    deploy app on instance
+  down      destroy instance
+  host      set up ssh host config for an instance
+  install   install app stack on instance
+  ssh       ssh into instance
+  sync      sync local files to instance
+  up        spin instance up
+  watch     sync and deploy on file changes
+EOF
+  exit 1
+esac
