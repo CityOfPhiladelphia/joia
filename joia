@@ -161,7 +161,7 @@ case "$1" in
     joia_sync
     ;;
   up)
-    # no instance check
+    # instance check handled in joia_up
     joia_up
     ;;
   watch)
