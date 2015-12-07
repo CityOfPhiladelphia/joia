@@ -10,8 +10,9 @@ commands:
   down      destroy instance
   host      set up ssh host config for an instance
   install   install app stack on instance
+  pull      pull file updates from instance
+  push      push file updates to instance
   ssh       ssh into instance
-  sync      sync local files to instance
   up        spin instance up
-  watch     sync and deploy on file changes
+  watch     push and deploy on file changes
 ```
