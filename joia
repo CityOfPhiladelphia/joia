@@ -84,13 +84,16 @@ joia_install () {
   joia_ssh "$JOIA_INSTALL"
 }
 
-joia_ssh () {
-  ssh -F "$ssh_conf" $JOIA_INSTANCE "$1"
+joia_pull () {
+  rsync -e "ssh -F $ssh_conf" -zrptui $JOIA_INSTANCE:$JOIA_APP_DIR/ ./
 }
 
-joia_sync () {
-  echo "Syncing files"
-  rsync -e "ssh -F $ssh_conf" -rzp --delete --exclude=".git" ./ $JOIA_INSTANCE:$JOIA_APP_DIR
+joia_push () {
+  rsync -e "ssh -F $ssh_conf" -zrptui ./ $JOIA_INSTANCE:$JOIA_APP_DIR/
+}
+
+joia_ssh () {
+  ssh -F "$ssh_conf" $JOIA_INSTANCE "$1"
 }
 
 joia_up () {
@@ -120,7 +123,7 @@ joia_up () {
   echo
 
   joia_host
-  joia_sync
+  joia_push
   joia_install
   joia_deploy
 
@@ -129,9 +132,16 @@ joia_up () {
 
 joia_watch () {
   echo "Syncing and deploying on file changes"
-  fswatch -rdo --event Created --event Updated --event Removed . | while read num; do
-    joia_sync
-    joia_deploy
+  while true; do
+    # Only run deploy on output from push
+    # (since files have been updated on the instance)
+    push_out="`joia_push`"
+    if [ "$push_out" ]; then
+      echo "$push_out"
+      joia_deploy
+    fi
+    joia_pull
+    sleep 5
   done
 }
 
@@ -152,13 +162,22 @@ case "$1" in
     instance_check
     joia_install
     ;;
+  pull)
+    instance_check
+    joia_pull
+    ;;
+  push)
+    instance_check
+    joia_push
+    ;;
   ssh)
     instance_check
     joia_ssh
     ;;
   sync)
     instance_check
-    joia_sync
+    joia_pull
+    joia_push
     ;;
   up)
     # instance check handled in joia_up
@@ -177,8 +196,10 @@ commands:
   down      destroy instance
   host      set up ssh host config for an instance
   install   install app stack on instance
+  pull      pull file updates from instance
+  push      push file updates to instance
   ssh       ssh into instance
-  sync      sync local files to instance
+  sync      sync files between local and instance
   up        spin instance up
   watch     sync and deploy on file changes
 EOF
