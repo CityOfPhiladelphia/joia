@@ -104,8 +104,8 @@ joia_up () {
   fi
 
   echo "Provisioning instance"
-  JOIA_INSTANCE=`aws ec2 run-instances --key-name $KEY_PAIR --instance-type $JOIA_TYPE \
-    --associate-public-ip-address --image-id $AMI --subnet-id $SUBNET | \
+  JOIA_INSTANCE=`aws ec2 run-instances --key-name $JOIA_KEY_PAIR --instance-type $JOIA_TYPE \
+    --associate-public-ip-address --image-id $JOIA_AMI --subnet-id $JOIA_SUBNET | \
     grep "^INSTANCES" | cut -f8`
 
   echo "Tagging instance"
