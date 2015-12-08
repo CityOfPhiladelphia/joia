@@ -85,7 +85,7 @@ joia_install () {
 }
 
 joia_pull () {
-  rsync -e "ssh -F $ssh_conf" -zrptui $JOIA_INSTANCE:$JOIA_APP_DIR/ ./
+  rsync -e "ssh -F $ssh_conf" -zrptui --delete --exclude=".git" $JOIA_INSTANCE:$JOIA_APP_DIR/ ./
 }
 
 joia_push () {
