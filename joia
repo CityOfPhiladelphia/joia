@@ -82,6 +82,7 @@ joia_install () {
   echo "Running install scripts on instance"
   [ "$JOIA_PRE_INSTALL" ] && joia_ssh "$JOIA_PRE_INSTALL"
   joia_ssh "$JOIA_INSTALL"
+  [ "$JOIA_POST_INSTALL" ] && joia_ssh "$JOIA_POST_INSTALL"
 }
 
 joia_pull () {
