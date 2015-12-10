@@ -84,8 +84,10 @@ joia_push () {
   rsync -e "ssh -F $ssh_conf" -zrptui --delete --exclude=".git" ./ $JOIA_INSTANCE:$JOIA_APP_DIR/
 }
 
+set -x
+
 joia_ssh () {
-  ssh -F "$ssh_conf" $JOIA_INSTANCE "$*"
+  ssh -F "$ssh_conf" $JOIA_INSTANCE -t "cd $JOIA_APP_DIR; $*"
 }
 
 joia_up () {
@@ -166,7 +168,8 @@ case "$1" in
     ;;
   ssh)
     instance_check
-    joia_ssh
+    shift
+    joia_ssh "$@"
     ;;
   up)
     # instance check handled in joia_up
