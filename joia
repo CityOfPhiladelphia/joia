@@ -194,5 +194,5 @@ commands:
   up        spin instance up
   watch     push and deploy on file changes
 EOF
-  exit 1
+    exit 1
 esac
