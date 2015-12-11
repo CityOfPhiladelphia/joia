@@ -85,7 +85,9 @@ joia_push () {
 }
 
 joia_ssh () {
-  ssh -F "$ssh_conf" $JOIA_INSTANCE -t "cd $JOIA_APP_DIR; $*"
+  cmd="$1"
+  [ "$cmd" ] || cmd="bash --login"
+  ssh -F "$ssh_conf" $JOIA_INSTANCE -t "cd $JOIA_APP_DIR; $cmd"
 }
 
 joia_up () {
