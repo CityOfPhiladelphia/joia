@@ -120,6 +120,7 @@ joia_up () {
   joia_push
   joia_install
   joia_deploy
+  joia_pull
 
   echo "Sync and deploy on changes with \"joia watch\""
 }
