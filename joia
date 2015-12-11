@@ -67,7 +67,7 @@ joia_host () {
 Host $JOIA_INSTANCE
     User $JOIA_USER
     HostName $JOIA_HOSTNAME
-    IdentityFile ~/.ssh/$KEY_PAIR.pem
+    IdentityFile ~/.ssh/$JOIA_KEY_PAIR.pem
     UserKnownHostsFile $ssh_hosts
 EOF
 }
