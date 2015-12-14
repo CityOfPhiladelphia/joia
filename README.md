@@ -10,9 +10,10 @@ commands:
   down      destroy instance
   host      set up ssh host config for an instance
   install   install app stack on instance
-  pull      pull file updates from instance
-  push      push file updates to instance
   ssh       ssh into instance
+  sync      sync files between local and instance
   up        spin instance up
-  watch     push and deploy on file changes
+  watch     sync and deploy on file changes
 ```
+
+Dependencies: aws, cat, ed, ssh, unison
