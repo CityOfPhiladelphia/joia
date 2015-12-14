@@ -76,18 +76,14 @@ joia_install () {
   echo "A joia_install function must be defined in $conf"
 }
 
-joia_pull () {
-  rsync -e "ssh -F $ssh_conf" -zrptui --delete --exclude=".git" $JOIA_INSTANCE:$JOIA_APP_DIR/ ./
-}
-
-joia_push () {
-  rsync -e "ssh -F $ssh_conf" -zrptui --delete --exclude=".git" ./ $JOIA_INSTANCE:$JOIA_APP_DIR/
-}
-
 joia_ssh () {
   cmd="$1"
   [ "$cmd" ] || cmd="bash --login"
   ssh -F "$ssh_conf" $JOIA_INSTANCE -t "cd $JOIA_APP_DIR; $cmd"
+}
+
+joia_sync () {
+  unison -terse -batch -prefer newer -ignore "Path .git" -sshargs "-F $ssh_conf" . ssh://$JOIA_INSTANCE/$JOIA_APP_DIR
 }
 
 joia_up () {
@@ -117,10 +113,9 @@ joia_up () {
   echo
 
   joia_host
-  joia_push
+  joia_sync
   joia_install
   joia_deploy
-  joia_pull
 
   echo "Sync and deploy on changes with \"joia watch\""
 }
@@ -128,11 +123,11 @@ joia_up () {
 joia_watch () {
   echo "Syncing and deploying on file changes"
   while true; do
-    # Only run deploy on output from push
+    # Only run deploy on output from sync
     # (since files have been updated on the instance)
-    push_out="`joia_push`"
-    if [ "$push_out" ]; then
-      echo "$push_out"
+    sync_out="`joia_sync`"
+    if [ "$sync_out" ]; then
+      echo "$sync_out"
       joia_deploy
     fi
     sleep 5
@@ -159,18 +154,14 @@ case "$1" in
     instance_check
     joia_install
     ;;
-  pull)
-    instance_check
-    joia_pull
-    ;;
-  push)
-    instance_check
-    joia_push
-    ;;
   ssh)
     instance_check
     shift
     joia_ssh "$@"
+    ;;
+  sync)
+    instance_check
+    joia_sync
     ;;
   up)
     # instance check handled in joia_up
@@ -189,11 +180,10 @@ commands:
   down      destroy instance
   host      set up ssh host config for an instance
   install   install app stack on instance
-  pull      pull file updates from instance
-  push      push file updates to instance
   ssh       ssh into instance
+  sync      sync files between local and instance
   up        spin instance up
-  watch     push and deploy on file changes
+  watch     sync and deploy on file changes
 EOF
     exit 1
 esac
