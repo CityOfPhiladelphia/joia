@@ -76,6 +76,10 @@ joia_install () {
   echo "A joia_install function must be defined in $conf"
 }
 
+joia_push () {
+  rsync -e "ssh -F $ssh_conf" -zrptui --delete --exclude=".git" ./ $JOIA_INSTANCE:$JOIA_APP_DIR/
+}
+
 joia_ssh () {
   cmd="$1"
   [ "$cmd" ] || cmd="bash --login"
@@ -113,7 +117,7 @@ joia_up () {
   echo
 
   joia_host
-  joia_sync
+  joia_push
   joia_install
   joia_deploy
 
@@ -154,6 +158,10 @@ case "$1" in
     instance_check
     joia_install
     ;;
+  push)
+    instance_check
+    joia_push
+    ;;
   ssh)
     instance_check
     shift
@@ -180,8 +188,9 @@ commands:
   down      destroy instance
   host      set up ssh host config for an instance
   install   install app stack on instance
+  push      push files to instance
   ssh       ssh into instance
-  sync      sync files between local and instance
+  sync      sync files with instance
   up        spin instance up
   watch     sync and deploy on file changes
 EOF
