@@ -15,17 +15,17 @@ mkdir -p "$ssh_dir"
 [ -f ".env" ] && source ".env"
 
 # Defaults
-[ ! "$JOIA_APP_DIR" ] && JOIA_APP_DIR=app
-[ ! "$JOIA_USER" ] && JOIA_USER=ubuntu
-[ ! "$JOIA_NAME" ] && JOIA_NAME=joia
-[ ! "$JOIA_AMI" ] && JOIA_AMI=ami-d05e75b8 # ubuntu 14.04
-[ ! "$JOIA_TYPE" ] && JOIA_TYPE=t2.micro
+[ ! "$APP_DIR" ] && APP_DIR=app
+[ ! "$INSTANCE_USER" ] && INSTANCE_USER=ubuntu
+[ ! "$INSTANCE_NAME" ] && INSTANCE_NAME=joia
+[ ! "$AMI" ] && AMI=ami-d05e75b8 # ubuntu 14.04
+[ ! "$INSTANCE_TYPE" ] && INSTANCE_TYPE=t2.micro
 
 #
 # Helper functions
 
 instance_check () {
-  [ ! "$JOIA_INSTANCE" ] && echo "No reference found for JOIA_INSTANCE" && exit 1
+  [ ! "$INSTANCE" ] && echo "No reference found for INSTANCE" && exit 1
 }
 
 update_env () {
@@ -48,32 +48,32 @@ joia_deploy () {
 }
 
 joia_down () {
-  read -p "Terminate instance $JOIA_INSTANCE? (Enter \"y\" to proceed.) " terminate_yes
+  read -p "Terminate instance $INSTANCE? (Enter \"y\" to proceed.) " terminate_yes
   [ ! "$terminate_yes" = "y" ] && exit 0
 
-  aws ec2 terminate-instances --instance-id=$JOIA_INSTANCE
+  aws ec2 terminate-instances --instance-id=$INSTANCE
 
-  update_env "JOIA_INSTANCE" ""
+  update_env "INSTANCE" ""
 }
 
 joia_host () {
   echo "Getting hostname"
-  JOIA_HOSTNAME=`aws ec2 describe-instances --instance-id=$JOIA_INSTANCE | grep "^INSTANCES" | cut -f14`
+  DOMAIN=`aws ec2 describe-instances --instance-id=$INSTANCE | grep "^INSTANCES" | cut -f14`
 
-  if [ ! "$JOIA_HOSTNAME" ]; then
-    >&2 echo "No hostname returned for $JOIA_INSTANCE"
+  if [ ! "$DOMAIN" ]; then
+    >&2 echo "No hostname returned for $INSTANCE"
     return 1
   fi
 
-  update_env "JOIA_HOSTNAME" $JOIA_HOSTNAME
+  update_env "DOMAIN" $DOMAIN
 
   echo "Setting up ssh access"
-  ssh-keyscan $JOIA_HOSTNAME >> "$ssh_hosts" 2> /dev/null
+  ssh-keyscan $DOMAIN >> "$ssh_hosts" 2> /dev/null
   cat >> "$ssh_conf" <<EOF
-Host $JOIA_INSTANCE
-    User $JOIA_USER
-    HostName $JOIA_HOSTNAME
-    IdentityFile ~/.ssh/$JOIA_KEY_PAIR.pem
+Host $INSTANCE
+    User $INSTANCE_USER
+    HostName $DOMAIN
+    IdentityFile ~/.ssh/$KEY_PAIR.pem
     UserKnownHostsFile $ssh_hosts
 EOF
 }
@@ -83,45 +83,45 @@ joia_install () {
 }
 
 joia_pull () {
-  rsync -e "ssh -F $ssh_conf" -zrptui --delete --exclude=".git" $JOIA_INSTANCE:$JOIA_APP_DIR/ ./
+  rsync -e "ssh -F $ssh_conf" -zrptui --delete --exclude=".git" $INSTANCE:$APP_DIR/ ./
 }
 
 joia_push () {
-  rsync -e "ssh -F $ssh_conf" -zrptui --delete --exclude=".git" ./ $JOIA_INSTANCE:$JOIA_APP_DIR/
+  rsync -e "ssh -F $ssh_conf" -zrptui --delete --exclude=".git" ./ $INSTANCE:$APP_DIR/
 }
 
 joia_ssh () {
   cmd="$1"
   [ "$cmd" ] || cmd="bash --login"
-  ssh -F "$ssh_conf" $JOIA_INSTANCE -t "cd $JOIA_APP_DIR; $cmd"
+  ssh -F "$ssh_conf" $INSTANCE -t "cd $APP_DIR; $cmd"
 }
 
 joia_sync () {
-  unison -terse -batch -prefer newer -ignore "Path .git" -sshargs "-F $ssh_conf" . ssh://$JOIA_INSTANCE/$JOIA_APP_DIR
+  unison -terse -batch -prefer newer -ignore "Path .git" -sshargs "-F $ssh_conf" . ssh://$INSTANCE/$APP_DIR
 }
 
 joia_up () {
-  if [ "$JOIA_INSTANCE" ]; then
-    echo "Existing reference found: JOIA_INSTANCE=$JOIA_INSTANCE"
+  if [ "$INSTANCE" ]; then
+    echo "Existing reference found: INSTANCE=$INSTANCE"
     read -p "Spin up new instance and replace reference? (Enter \"y\" to proceed.) " ref_replace
     [ ! "$ref_replace" = "y" ] && exit 0
   fi
 
   echo "Provisioning instance"
-  JOIA_INSTANCE=`aws ec2 run-instances --key-name $JOIA_KEY_PAIR --instance-type $JOIA_TYPE \
-    --associate-public-ip-address --image-id $JOIA_AMI --subnet-id $JOIA_SUBNET | \
+  INSTANCE=`aws ec2 run-instances --key-name $KEY_PAIR --instance-type $INSTANCE_TYPE \
+    --associate-public-ip-address --image-id $AMI --subnet-id $SUBNET | \
     grep "^INSTANCES" | cut -f8`
 
   echo "Tagging instance"
-  aws ec2 create-tags --resources $JOIA_INSTANCE --tags Key=Name,Value=$JOIA_NAME
+  aws ec2 create-tags --resources $INSTANCE --tags Key=Name,Value=$INSTANCE_NAME
 
-  update_env "JOIA_INSTANCE" $JOIA_INSTANCE
+  update_env "INSTANCE" $INSTANCE
 
-  echo -n "Waiting for instance $JOIA_INSTANCE to come online. This may take a few minutes"
+  echo -n "Waiting for instance $INSTANCE to come online. This may take a few minutes"
   while true; do
     sleep 5
     echo -n "."
-    reachability=`aws ec2 describe-instance-status --instance-id=$JOIA_INSTANCE | grep reachability | head -n1 | cut -f3`
+    reachability=`aws ec2 describe-instance-status --instance-id=$INSTANCE | grep reachability | head -n1 | cut -f3`
     [ "$reachability" = "passed" ] && break
   done
   echo
