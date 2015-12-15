@@ -29,14 +29,14 @@ instance_check () {
 }
 
 update_env () {
-  # Replace value if var in file
-  ed_out="$(ed -s $joia_env <<EOF
+  # Replace value if var in file and ed exists
+  hash ed 2>/dev/null && ed_out="$(ed -s $joia_env <<EOF
 g/$1/s/=.*/=$2
 w
 EOF
 )"
 
-  # If the var wasn't already in the file add it
+  # Otherwise just append the var to the file
   [ ! "$ed_out" ] && echo "$1=$2" >> $joia_env
 }
 
