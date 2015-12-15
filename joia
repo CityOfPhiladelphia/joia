@@ -59,6 +59,12 @@ joia_down () {
 joia_host () {
   echo "Getting hostname"
   JOIA_HOSTNAME=`aws ec2 describe-instances --instance-id=$JOIA_INSTANCE | grep "^INSTANCES" | cut -f14`
+
+  if [ ! "$JOIA_HOSTNAME" ]; then
+    >&2 echo "No hostname returned for $JOIA_INSTANCE"
+    return 1
+  fi
+
   update_env "JOIA_HOSTNAME" $JOIA_HOSTNAME
 
   echo "Setting up ssh access"
