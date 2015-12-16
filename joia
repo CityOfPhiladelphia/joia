@@ -3,15 +3,8 @@
 # joia deploys an app to an instance on AWS
 
 conf=".joia.sh"
-joia_dir=".joia"
-joia_env="$joia_dir/env"
-ssh_dir="$joia_dir/ssh"
-ssh_conf="$ssh_dir/config"
-ssh_hosts="$ssh_dir/known_hosts"
 
-mkdir -p "$ssh_dir"
-
-[ -f "$joia_env" ] && source "$joia_env"
+# Override environment if there's a .env
 [ -f ".env" ] && source ".env"
 
 # Defaults
@@ -29,15 +22,15 @@ instance_check () {
 }
 
 update_env () {
-  # Replace value if var in file and ed exists
-  hash ed 2>/dev/null && ed_out="$(ed -s $joia_env <<EOF
+  # Replace value if ed exists and var in file
+  hash ed 2>/dev/null && ed_out="$(ed -s .env <<EOF
 g/$1/s/=.*/=$2
 w
 EOF
 )"
 
   # Otherwise just append the var to the file
-  [ ! "$ed_out" ] && echo "$1=$2" >> $joia_env
+  [ ! "$ed_out" ] && echo "$1=$2" >> .env
 }
 
 #
@@ -66,16 +59,7 @@ joia_host () {
   fi
 
   update_env "DOMAIN" "$DOMAIN"
-
-  echo "Setting up ssh access"
-  ssh-keyscan "$DOMAIN" >> "$ssh_hosts" 2> /dev/null
-  cat >> "$ssh_conf" <<EOF
-Host $INSTANCE
-    User $INSTANCE_USER
-    HostName $DOMAIN
-    IdentityFile ~/.ssh/$KEY_PAIR.pem
-    UserKnownHostsFile $ssh_hosts
-EOF
+  ssh-keyscan "$DOMAIN" >> ~/.ssh/known_hosts 2> /dev/null
 }
 
 joia_install () {
@@ -83,21 +67,21 @@ joia_install () {
 }
 
 joia_pull () {
-  rsync -e "ssh -F $ssh_conf" -zrptui --delete --exclude=".git" "$INSTANCE:$APP_DIR/" ./
+  rsync -e "ssh -i $HOME/.ssh/$KEY_PAIR.pem" -zrptui --delete --exclude=".git" "$INSTANCE_USER@$DOMAIN:$APP_DIR/" ./
 }
 
 joia_push () {
-  rsync -e "ssh -F $ssh_conf" -zrptui --delete --exclude=".git" ./ "$INSTANCE:$APP_DIR/"
+  rsync -e "ssh -i $HOME/.ssh/$KEY_PAIR.pem" -zrptui --delete --exclude=".git" ./ "$INSTANCE_USER@$DOMAIN:$APP_DIR/"
 }
 
 joia_ssh () {
   cmd="$1"
   [ "$cmd" ] || cmd="bash --login"
-  ssh -F "$ssh_conf" "$INSTANCE" -t "cd $APP_DIR; $cmd"
+  ssh -i "$HOME/.ssh/$KEY_PAIR.pem" "$INSTANCE_USER@$DOMAIN" -t "cd $APP_DIR; $cmd"
 }
 
 joia_sync () {
-  unison -terse -batch -prefer newer -ignore "Path .git" -sshargs "-F $ssh_conf" . "ssh://$INSTANCE/$APP_DIR"
+  unison -terse -batch -prefer newer -ignore "Path .git" -sshargs "-i $HOME/.ssh/$KEY_PAIR.pem" . "ssh://$INSTANCE_USER@$DOMAIN/$APP_DIR"
 }
 
 joia_up () {
