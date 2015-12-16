@@ -10,7 +10,6 @@ conf=".joia.sh"
 # Defaults
 [ ! "$APP_DIR" ] && APP_DIR=app
 [ ! "$INSTANCE_USER" ] && INSTANCE_USER=ubuntu
-[ ! "$INSTANCE_NAME" ] && INSTANCE_NAME=joia
 [ ! "$AMI" ] && AMI=ami-d05e75b8 # ubuntu 14.04
 [ ! "$INSTANCE_TYPE" ] && INSTANCE_TYPE=t2.micro
 
@@ -96,8 +95,10 @@ joia_up () {
     --associate-public-ip-address --image-id "$AMI" --subnet-id "$SUBNET" | \
     grep "^INSTANCES" | cut -f8)
 
-  echo "Tagging instance"
-  aws ec2 create-tags --resources "$INSTANCE" --tags "Key=Name,Value=$INSTANCE_NAME"
+  if [ "$INSTANCE_NAME" ]; then
+    echo "Tagging instance"
+    aws ec2 create-tags --resources "$INSTANCE" --tags "Key=Name,Value=$INSTANCE_NAME"
+  fi
 
   update_env "INSTANCE" "$INSTANCE"
 
