@@ -23,7 +23,7 @@ instance_check () {
 update_env () {
   # Replace value if ed exists and var in file
   hash ed 2>/dev/null && ed_out="$(ed -s .env <<EOF
-g/$1/s/=.*/=$2
+g/$1=/s/=.*/=$2
 w
 EOF
 )"
