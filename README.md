@@ -18,4 +18,9 @@ commands:
   watch     sync and deploy on file changes
 ```
 
+
+## Install
+
 Dependencies: aws, cat, ed, ssh, unison
+
+Place executable "joia" file in $PATH.
