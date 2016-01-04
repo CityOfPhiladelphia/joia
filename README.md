@@ -21,6 +21,6 @@ commands:
 
 ## Install
 
-Dependencies: aws, cat, ed, ssh, unison
+Dependencies: aws, cat, ed, rsync, ssh, unison
 
 Place executable "joia" file in $PATH.
