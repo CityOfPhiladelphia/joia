@@ -125,10 +125,6 @@ joia_watch () {
     # Only run deploy on output from sync
     # (since files have been updated on the instance)
     sync_out="$(joia_sync 2>&1)"
-
-    # If sync errors (maybe due to lack of unison) try push
-    [ $? -ne 0 ] && sync_out="$(joia_push 2>&1)"
-
     if [ "$sync_out" ]; then
       echo "$sync_out"
       joia_deploy
