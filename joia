@@ -8,7 +8,7 @@ conf=".joia.sh"
 [ -f ".env" ] && source ".env"
 
 # Defaults
-[ ! "$AMI" ] && AMI=ami-d05e75b8 # ubuntu 14.04
+[ ! "$AMI" ] && AMI=ami-fce3c696 # ubuntu 14.04
 [ ! "$APP_DIR" ] && APP_DIR=app
 [ ! "$INSTANCE_TYPE" ] && INSTANCE_TYPE=t2.nano
 [ ! "$INSTANCE_USER" ] && INSTANCE_USER=ubuntu
