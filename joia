@@ -46,6 +46,7 @@ joia_down () {
   aws ec2 terminate-instances --instance-id="$INSTANCE_ID"
 
   update_env "INSTANCE_ID" ""
+  update_env "INSTANCE_HOSTNAME" ""
 }
 
 joia_host () {
