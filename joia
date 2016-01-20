@@ -17,7 +17,7 @@ conf=".joia.sh"
 # Helper functions
 
 instance_check () {
-  [ ! "$INSTANCE" ] && echo "No reference found for INSTANCE" && exit 1
+  [ ! "$INSTANCE_ID" ] && echo "No reference found for INSTANCE_ID" && exit 1
 }
 
 update_env () {
@@ -40,25 +40,25 @@ joia_deploy () {
 }
 
 joia_down () {
-  read -p "Terminate instance $INSTANCE? (Enter \"y\" to proceed.) " terminate_yes
+  read -p "Terminate instance $INSTANCE_ID? (Enter \"y\" to proceed.) " terminate_yes
   [ ! "$terminate_yes" = "y" ] && exit 0
 
-  aws ec2 terminate-instances --instance-id="$INSTANCE"
+  aws ec2 terminate-instances --instance-id="$INSTANCE_ID"
 
-  update_env "INSTANCE" ""
+  update_env "INSTANCE_ID" ""
 }
 
 joia_host () {
   echo "Getting hostname"
-  DOMAIN=$(aws ec2 describe-instances --instance-id="$INSTANCE" | grep "^INSTANCES" | cut -f14)
+  INSTANCE_HOSTNAME=$(aws ec2 describe-instances --instance-id="$INSTANCE_ID" | grep "^INSTANCES" | cut -f14)
 
-  if [ ! "$DOMAIN" ]; then
-    >&2 echo "No hostname returned for $INSTANCE"
+  if [ ! "$INSTANCE_HOSTNAME" ]; then
+    >&2 echo "No hostname returned for $INSTANCE_ID"
     return 1
   fi
 
-  update_env "DOMAIN" "$DOMAIN"
-  ssh-keyscan "$DOMAIN" >> ~/.ssh/known_hosts 2> /dev/null
+  update_env "INSTANCE_HOSTNAME" "$INSTANCE_HOSTNAME"
+  ssh-keyscan "$INSTANCE_HOSTNAME" >> ~/.ssh/known_hosts 2> /dev/null
 }
 
 joia_install () {
@@ -66,47 +66,47 @@ joia_install () {
 }
 
 joia_pull () {
-  rsync -e "ssh -i $HOME/.ssh/$KEY_PAIR.pem" -zrptui --delete --exclude=".git" "$INSTANCE_USER@$DOMAIN:$APP_DIR/" ./
+  rsync -e "ssh -i $HOME/.ssh/$KEY_PAIR.pem" -zrptui --delete --exclude=".git" "$INSTANCE_USER@$INSTANCE_HOSTNAME:$APP_DIR/" ./
 }
 
 joia_push () {
-  rsync -e "ssh -i $HOME/.ssh/$KEY_PAIR.pem" -zrptui --delete --exclude=".git" ./ "$INSTANCE_USER@$DOMAIN:$APP_DIR/"
+  rsync -e "ssh -i $HOME/.ssh/$KEY_PAIR.pem" -zrptui --delete --exclude=".git" ./ "$INSTANCE_USER@$INSTANCE_HOSTNAME:$APP_DIR/"
 }
 
 joia_ssh () {
   cmd="$1"
   [ "$cmd" ] || cmd="bash --login"
-  ssh -i "$HOME/.ssh/$KEY_PAIR.pem" "$INSTANCE_USER@$DOMAIN" -t "cd $APP_DIR; $cmd"
+  ssh -i "$HOME/.ssh/$KEY_PAIR.pem" "$INSTANCE_USER@$INSTANCE_HOSTNAME" -t "cd $APP_DIR; $cmd"
 }
 
 joia_sync () {
-  unison -terse -batch -prefer newer -ignore "Path .git" -sshargs "-i $HOME/.ssh/$KEY_PAIR.pem" . "ssh://$INSTANCE_USER@$DOMAIN/$APP_DIR"
+  unison -terse -batch -prefer newer -ignore "Path .git" -sshargs "-i $HOME/.ssh/$KEY_PAIR.pem" . "ssh://$INSTANCE_USER@$INSTANCE_HOSTNAME/$APP_DIR"
 }
 
 joia_up () {
-  if [ "$INSTANCE" ]; then
-    echo "Existing reference found: INSTANCE=$INSTANCE"
+  if [ "$INSTANCE_ID" ]; then
+    echo "Existing reference found: INSTANCE_ID=$INSTANCE_ID"
     read -p "Spin up new instance and replace reference? (Enter \"y\" to proceed.) " ref_replace
     [ ! "$ref_replace" = "y" ] && exit 0
   fi
 
   echo "Provisioning instance"
-  INSTANCE=$(aws ec2 run-instances --key-name "$KEY_PAIR" --instance-type "$INSTANCE_TYPE" \
+  INSTANCE_ID=$(aws ec2 run-instances --key-name "$KEY_PAIR" --instance-type "$INSTANCE_TYPE" \
     --associate-public-ip-address --image-id "$AMI" --subnet-id "$SUBNET" | \
     grep "^INSTANCES" | cut -f8)
 
   if [ "$INSTANCE_NAME" ]; then
     echo "Tagging instance"
-    aws ec2 create-tags --resources "$INSTANCE" --tags "Key=Name,Value=$INSTANCE_NAME"
+    aws ec2 create-tags --resources "$INSTANCE_ID" --tags "Key=Name,Value=$INSTANCE_NAME"
   fi
 
-  update_env "INSTANCE" "$INSTANCE"
+  update_env "INSTANCE_ID" "$INSTANCE_ID"
 
-  echo -n "Waiting for instance $INSTANCE to come online. This may take a few minutes"
+  echo -n "Waiting for instance $INSTANCE_ID to come online. This may take a few minutes"
   while true; do
     sleep 5
     echo -n "."
-    reachability=$(aws ec2 describe-instance-status --instance-id="$INSTANCE" | grep reachability | head -n1 | cut -f3)
+    reachability=$(aws ec2 describe-instance-status --instance-id="$INSTANCE_ID" | grep reachability | head -n1 | cut -f3)
     [ "$reachability" = "passed" ] && break
   done
   echo
