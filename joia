@@ -51,7 +51,8 @@ joia_down () {
 
 joia_host () {
   echo "Getting hostname"
-  INSTANCE_HOSTNAME=$(aws ec2 describe-instances --instance-id="$INSTANCE_ID" | grep "^INSTANCES" | cut -f14)
+  INSTANCE_HOSTNAME=$(aws ec2 describe-instances --instance-ids "$INSTANCE_ID" \
+    --query 'Reservations[0].Instances[0].PublicDnsName' | tr -d '"')
 
   if [ ! "$INSTANCE_HOSTNAME" ]; then
     >&2 echo "No hostname returned for $INSTANCE_ID"
@@ -93,8 +94,8 @@ joia_up () {
 
   echo "Provisioning instance"
   INSTANCE_ID=$(aws ec2 run-instances --key-name "$KEY_PAIR" --instance-type "$INSTANCE_TYPE" \
-    --associate-public-ip-address --image-id "$AMI" --subnet-id "$SUBNET" | \
-    grep "^INSTANCES" | cut -f8)
+    --associate-public-ip-address --image-id "$AMI" --subnet-id "$SUBNET" \
+    --query 'Instances[0].InstanceId' | tr -d '"')
 
   if [ "$INSTANCE_NAME" ]; then
     echo "Tagging instance"
