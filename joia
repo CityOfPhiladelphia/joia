@@ -43,7 +43,8 @@ joia_down () {
   read -p "Terminate instance $INSTANCE_ID? (Enter \"y\" to proceed.) " terminate_yes
   [ ! "$terminate_yes" = "y" ] && exit 0
 
-  aws ec2 terminate-instances --instance-id="$INSTANCE_ID"
+  echo "Instance $INSTANCE_ID terminating"
+  aws ec2 terminate-instances --instance-ids "$INSTANCE_ID" > /dev/null
 
   update_env "INSTANCE_ID" ""
   update_env "INSTANCE_HOSTNAME" ""
