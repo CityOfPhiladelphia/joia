@@ -103,14 +103,8 @@ joia_up () {
 
   update_env "INSTANCE_ID" "$INSTANCE_ID"
 
-  echo -n "Waiting for instance $INSTANCE_ID to come online. This may take a few minutes"
-  while true; do
-    sleep 5
-    echo -n "."
-    reachability=$(aws ec2 describe-instance-status --instance-id="$INSTANCE_ID" | grep reachability | head -n1 | cut -f3)
-    [ "$reachability" = "passed" ] && break
-  done
-  echo
+  echo -n "Waiting for instance $INSTANCE_ID to come online. This may take a few minutes."
+  aws ec2 wait instance-status-ok --instance-ids "$INSTANCE_ID"
 
   joia_host
   joia_push
