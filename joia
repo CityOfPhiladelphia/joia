@@ -103,7 +103,7 @@ joia_up () {
 
   update_env "INSTANCE_ID" "$INSTANCE_ID"
 
-  echo -n "Waiting for instance $INSTANCE_ID to come online. This may take a few minutes."
+  echo "Waiting for instance $INSTANCE_ID to come online (this may take a few minutes)"
   aws ec2 wait instance-status-ok --instance-ids "$INSTANCE_ID"
 
   joia_host
