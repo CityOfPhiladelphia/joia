@@ -50,6 +50,26 @@ joia_down () {
   update_env "INSTANCE_HOSTNAME" ""
 }
 
+joia_env () {
+  if [ ! -f ".env" ]; then
+    echo 'No .env to sync'
+    return
+  fi
+
+  echo 'Syncing .env to ~/.ssh/environment on instance'
+  rsync -e "ssh -i $HOME/.ssh/$KEY_PAIR.pem" .env "$INSTANCE_USER@$INSTANCE_HOSTNAME:.ssh/environment"
+
+  joia_ssh "
+    if grep -q '^PermitUserEnvironment yes' /etc/ssh/sshd_config; then
+      echo 'User environment already permitted for ssh'
+    else
+      echo 'Permitting user env for ssh'
+      echo -e '\\nPermitUserEnvironment yes' | sudo tee -a /etc/ssh/sshd_config > /dev/null
+      sudo service ssh restart
+    fi
+  "
+}
+
 joia_host () {
   echo "Getting hostname"
   INSTANCE_HOSTNAME=$(aws ec2 describe-instances --instance-ids "$INSTANCE_ID" \
@@ -110,6 +130,7 @@ joia_up () {
 
   joia_host
   joia_push
+  joia_env
   joia_install
   joia_deploy
 
@@ -141,6 +162,10 @@ case "$1" in
   down)
     instance_check
     joia_down
+    ;;
+  env)
+    instance_check
+    joia_env
     ;;
   host)
     instance_check
@@ -182,6 +207,7 @@ usage: joia <command>
 commands:
   deploy    deploy app on instance
   down      destroy instance
+  env       set environment on instance
   host      set up ssh host config for an instance
   install   install app stack on instance
   push      push files to instance
