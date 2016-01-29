@@ -139,22 +139,27 @@ joia_up () {
 
 joia_watch () {
   echo "Syncing and deploying on file changes"
+  sync_cmd="joia_sync"
+  sync_out="$($sync_cmd 2>&1)"
+
+  # If sync errors (maybe due to lack of unison) try push
+  if [ $? -ne 0 ]; then
+    echo "Error running sync, falling back to push"
+    sync_cmd="joia_push"
+    sync_out="$($sync_cmd 2>&1)"
+  fi
+
   while true; do
-    # Only run deploy on output from sync
-    # (since files have been updated on the instance)
-    sync_out="$(joia_sync 2>&1)"
-
-    # If sync errors (maybe due to lack of unison) try push
-    if [ $? -ne 0 ]; then
-      echo "Error running sync, falling back to push"
-      sync_out="$(joia_push 2>&1)"
-    fi
-
     if [ "$sync_out" ]; then
       echo "$sync_out"
       joia_deploy
     fi
+
     sleep 5
+
+    # Only run deploy on output from sync
+    # (since files have been updated on the instance)
+    sync_out="$($sync_cmd 2>&1)"
   done
 }
 
