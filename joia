@@ -89,11 +89,11 @@ joia_install () {
 }
 
 joia_pull () {
-  rsync -e "ssh -i $HOME/.ssh/$KEY_PAIR.pem" -zrptui --delete --exclude=".git" "$INSTANCE_USER@$INSTANCE_HOSTNAME:$APP_DIR/" ./
+  rsync -e "ssh -i $HOME/.ssh/$KEY_PAIR.pem" -zrptui --delete --exclude=".*" "$INSTANCE_USER@$INSTANCE_HOSTNAME:$APP_DIR/" ./
 }
 
 joia_push () {
-  rsync -e "ssh -i $HOME/.ssh/$KEY_PAIR.pem" -zrptui --delete --exclude=".git" ./ "$INSTANCE_USER@$INSTANCE_HOSTNAME:$APP_DIR/"
+  rsync -e "ssh -i $HOME/.ssh/$KEY_PAIR.pem" -zrptui --delete --exclude=".*" ./ "$INSTANCE_USER@$INSTANCE_HOSTNAME:$APP_DIR/"
 }
 
 joia_ssh () {
@@ -103,7 +103,7 @@ joia_ssh () {
 }
 
 joia_sync () {
-  unison -terse -batch -prefer newer -ignore "Path .git" -sshargs "-i $HOME/.ssh/$KEY_PAIR.pem" . "ssh://$INSTANCE_USER@$INSTANCE_HOSTNAME/$APP_DIR"
+  unison -terse -batch -prefer newer -ignore "Name .*" -sshargs "-i $HOME/.ssh/$KEY_PAIR.pem" . "ssh://$INSTANCE_USER@$INSTANCE_HOSTNAME/$APP_DIR"
 }
 
 joia_up () {
