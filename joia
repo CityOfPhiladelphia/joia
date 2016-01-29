@@ -89,11 +89,11 @@ joia_install () {
 }
 
 joia_pull () {
-  rsync -e "ssh -i $HOME/.ssh/$KEY_PAIR.pem" -zrpcui --delete --exclude=".*" "$INSTANCE_USER@$INSTANCE_HOSTNAME:$APP_DIR/" ./
+  rsync -e "ssh -i $HOME/.ssh/$KEY_PAIR.pem" -zrpci --delete --exclude=".*" "$INSTANCE_USER@$INSTANCE_HOSTNAME:$APP_DIR/" ./
 }
 
 joia_push () {
-  rsync -e "ssh -i $HOME/.ssh/$KEY_PAIR.pem" -zrpcui --delete --exclude=".*" ./ "$INSTANCE_USER@$INSTANCE_HOSTNAME:$APP_DIR/"
+  rsync -e "ssh -i $HOME/.ssh/$KEY_PAIR.pem" -zrpci --delete --exclude=".*" ./ "$INSTANCE_USER@$INSTANCE_HOSTNAME:$APP_DIR/"
 }
 
 joia_ssh () {
