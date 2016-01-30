@@ -8,6 +8,7 @@ usage: joia <command>
 commands:
   deploy    deploy app on instance
   down      destroy instance
+  env       set environment on instance
   host      set up ssh host config for an instance
   install   install app stack on instance
   push      push files to instance
