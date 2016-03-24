@@ -113,6 +113,16 @@ joia_up () {
     [ ! "$ref_replace" = "y" ] && exit 0
   fi
 
+  if [ ! "$SUBNET" ]; then
+    echo "Please specify a SUBNET"
+    exit 1
+  fi
+
+  if [ ! "$KEY_PAIR" ]; then
+    echo "Please specify a KEY_PAIR"
+    exit 1
+  fi
+
   echo "Provisioning instance"
   INSTANCE_ID=$(aws ec2 run-instances --key-name "$KEY_PAIR" --instance-type "$INSTANCE_TYPE" \
     --associate-public-ip-address --image-id "$AMI" --subnet-id "$SUBNET" \
