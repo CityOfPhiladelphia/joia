@@ -4,7 +4,10 @@
 
 conf=".joia.sh"
 
-# Override environment if there's a .env
+# Global vars in ~/.joiarc
+[ -f "$HOME/.joiarc" ] && source "$HOME/.joiarc"
+
+# App-specific in .env
 [ -f ".env" ] && source ".env"
 
 # Defaults
