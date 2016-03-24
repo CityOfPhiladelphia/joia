@@ -57,7 +57,7 @@ joia_env () {
   fi
 
   echo 'Syncing .env to ~/.ssh/environment on instance'
-  rsync -e "ssh -i $HOME/.ssh/$KEY_PAIR.pem" .env "$INSTANCE_USER@$INSTANCE_HOSTNAME:.ssh/environment"
+  rsync -e "ssh -i $HOME/.ssh/$KEYPAIR.pem" .env "$INSTANCE_USER@$INSTANCE_HOSTNAME:.ssh/environment"
 
   joia_ssh "
     if grep -q '^PermitUserEnvironment yes' /etc/ssh/sshd_config; then
@@ -89,21 +89,21 @@ joia_install () {
 }
 
 joia_pull () {
-  rsync -e "ssh -i $HOME/.ssh/$KEY_PAIR.pem" -zrpci --delete --exclude=".*" "$INSTANCE_USER@$INSTANCE_HOSTNAME:$APP_DIR/" ./
+  rsync -e "ssh -i $HOME/.ssh/$KEYPAIR.pem" -zrpci --delete --exclude=".*" "$INSTANCE_USER@$INSTANCE_HOSTNAME:$APP_DIR/" ./
 }
 
 joia_push () {
-  rsync -e "ssh -i $HOME/.ssh/$KEY_PAIR.pem" -zrpci --delete --exclude=".*" ./ "$INSTANCE_USER@$INSTANCE_HOSTNAME:$APP_DIR/"
+  rsync -e "ssh -i $HOME/.ssh/$KEYPAIR.pem" -zrpci --delete --exclude=".*" ./ "$INSTANCE_USER@$INSTANCE_HOSTNAME:$APP_DIR/"
 }
 
 joia_ssh () {
   cmd="$1"
   [ "$cmd" ] || cmd="bash --login"
-  ssh -i "$HOME/.ssh/$KEY_PAIR.pem" "$INSTANCE_USER@$INSTANCE_HOSTNAME" -t "cd $APP_DIR; $cmd"
+  ssh -i "$HOME/.ssh/$KEYPAIR.pem" "$INSTANCE_USER@$INSTANCE_HOSTNAME" -t "cd $APP_DIR; $cmd"
 }
 
 joia_sync () {
-  unison -terse -batch -prefer newer -ignore "Name .*" -sshargs "-i $HOME/.ssh/$KEY_PAIR.pem" . "ssh://$INSTANCE_USER@$INSTANCE_HOSTNAME/$APP_DIR"
+  unison -terse -batch -prefer newer -ignore "Name .*" -sshargs "-i $HOME/.ssh/$KEYPAIR.pem" . "ssh://$INSTANCE_USER@$INSTANCE_HOSTNAME/$APP_DIR"
 }
 
 joia_up () {
@@ -118,13 +118,13 @@ joia_up () {
     exit 1
   fi
 
-  if [ ! "$KEY_PAIR" ]; then
-    echo "Please specify a KEY_PAIR"
+  if [ ! "$KEYPAIR" ]; then
+    echo "Please specify a KEYPAIR"
     exit 1
   fi
 
   echo "Provisioning instance"
-  INSTANCE_ID=$(aws ec2 run-instances --key-name "$KEY_PAIR" --instance-type "$INSTANCE_TYPE" \
+  INSTANCE_ID=$(aws ec2 run-instances --key-name "$KEYPAIR" --instance-type "$INSTANCE_TYPE" \
     --associate-public-ip-address --image-id "$AMI" --subnet-id "$SUBNET" \
     --query 'Instances[0].InstanceId' | tr -d '"')
 
