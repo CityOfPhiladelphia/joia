@@ -25,3 +25,10 @@ commands:
 Dependencies: aws, cat, ed, rsync, ssh (and unison on both local and instance if you want to use sync)
 
 Place executable "joia" file in a directory in your $PATH.
+
+
+## Configuration
+
+Global variables are set in `~/.joiarc`. Good candidates for this file include KEYPAIR and SUBNET.
+
+App-specific variables can be set in `.env` at the root of an app.
