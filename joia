@@ -114,12 +114,12 @@ joia_up () {
   fi
 
   if [ ! "$SUBNET" ]; then
-    echo "Please specify a SUBNET"
+    echo "Please specify SUBNET"
     exit 1
   fi
 
   if [ ! "$KEYPAIR" ]; then
-    echo "Please specify a KEYPAIR"
+    echo "Please specify KEYPAIR"
     exit 1
   fi
 
