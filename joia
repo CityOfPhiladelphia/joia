@@ -2,8 +2,6 @@
 #
 # joia deploys an app to an instance on AWS
 
-conf=".joia.sh"
-
 # Global vars in ~/.joiarc
 [ -f "$HOME/.joiarc" ] && source "$HOME/.joiarc"
 
@@ -13,6 +11,8 @@ conf=".joia.sh"
 # Defaults
 [ ! "$AMI" ] && AMI=ami-fce3c696 # ubuntu 14.04
 [ ! "$APP_DIR" ] && APP_DIR=app
+[ ! "$DEPLOY_SCRIPT" ] && DEPLOY_SCRIPT=scripts/deploy.sh
+[ ! "$INSTALL_SCRIPT" ] && INSTALL_SCRIPT=scripts/install.sh
 [ ! "$INSTANCE_TYPE" ] && INSTANCE_TYPE=t2.nano
 [ ! "$INSTANCE_USER" ] && INSTANCE_USER=ubuntu
 
@@ -39,7 +39,7 @@ EOF
 # Command functions
 
 joia_deploy () {
-  echo "A joia_deploy function must be defined in $conf"
+  joia_ssh "$DEPLOY_SCRIPT"
 }
 
 joia_down () {
@@ -88,7 +88,7 @@ joia_host () {
 }
 
 joia_install () {
-  echo "A joia_install function must be defined in $conf"
+  joia_ssh "$INSTALL_SCRIPT"
 }
 
 joia_pull () {
@@ -175,9 +175,6 @@ joia_watch () {
     sync_out="$($sync_cmd 2>&1)"
   done
 }
-
-# Overwrite functions with those defined in $conf
-[ -f "$conf" ] && source "$conf"
 
 case "$1" in
   deploy)
