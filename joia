@@ -116,13 +116,13 @@ joia_up () {
     [ ! "$ref_replace" = "y" ] && exit 0
   fi
 
-  if [ ! "$SUBNET" ]; then
-    echo "Please specify SUBNET"
+  if [ ! "$KEYPAIR" ]; then
+    echo "Please specify KEYPAIR"
     exit 1
   fi
 
-  if [ ! "$KEYPAIR" ]; then
-    echo "Please specify KEYPAIR"
+  if [ ! "$SUBNET" ]; then
+    echo "Please specify SUBNET"
     exit 1
   fi
 
