@@ -23,7 +23,7 @@ commands:
 ## Install
 
 Dependencies: 
-* (aws cli)[http://docs.aws.amazon.com/cli/latest/userguide/installing.html]
+* [aws cli](http://docs.aws.amazon.com/cli/latest/userguide/installing.html)
 * cat
 * ed
 * rsync
